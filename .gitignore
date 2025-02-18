@@ -1,0 +1,53 @@
+# Бинарные файлы
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+
+# Кеш и временные файлы
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Каталоги Go
+bin/
+vendor/
+
+# Go модули и зависимости
+go.sum
+go.work
+go.work.sum
+
+# Кеш сборки Go
+*.test
+*.prof
+*.cover
+*.o
+*.a
+
+# Файлы IDE и редакторов
+.idea/
+.vscode/
+*.iml
+
+# Кеш GoLand
+.golangci.yml
+*.pb.go
+*.pb.gw.go
+
+# Docker и CI/CD
+docker-compose.override.yml
+.env
+.env.local
+.envrc
+
+# MacOS и система
+.DS_Store
+Thumbs.db
+
+# Air (hot reload)
+.air.toml
+tmp/
