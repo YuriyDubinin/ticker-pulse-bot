@@ -5,7 +5,7 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/joho/godotenv"
+	godotenv "github.com/joho/godotenv"
 )
 
 type TelegramBot struct {
@@ -43,4 +43,43 @@ func (tb *TelegramBot) SendMessage(text string) error {
 	msg := tgbotapi.NewMessageToChannel(tb.chatID, text)
 	_, err := tb.api.Send(msg)
 	return err
+}
+
+// GUI
+func (tb *TelegramBot) CreateKeyboard() error {
+	inlineButtons := [][]tgbotapi.InlineKeyboardButton{
+		{
+			tgbotapi.NewInlineKeyboardButtonData("📊 Курс актуальных котировок", "CURRENT_QUOTES_RATE"),
+		},
+	}
+
+	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(inlineButtons...)
+
+	msg := tgbotapi.NewMessageToChannel(tb.chatID, "📋 Основное меню: ")
+	msg.ReplyMarkup = inlineKeyboard
+
+	_, err := tb.api.Send(msg)
+
+	return err
+}
+
+func (tb *TelegramBot) ListenKeyboardEvents() {
+	updates, err := tb.api.GetUpdatesChan(tgbotapi.NewUpdate(0))
+	if err != nil {
+		log.Fatal("[TICKER-PULSE-BOT]: Ошибка получения обновлений: ", err)
+	}
+
+	for update := range updates {
+		if update.CallbackQuery != nil {
+			callbackData := update.CallbackQuery.Data
+			switch callbackData {
+			case "CURRENT_QUOTES_RATE":
+				err := tb.SendMessage("🔄 Запрашиваем актуальные котировки...")
+				if err != nil {
+					log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
+				}
+				log.Println("CURRENT_QUOTES_RATE")
+			}
+		}
+	}
 }

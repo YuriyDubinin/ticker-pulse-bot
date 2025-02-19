@@ -3,12 +3,12 @@ package bot
 import (
 	"log"
 	telegramBot "ticker-pulse-bot/internal/telegram_bot"
-	workerpool "ticker-pulse-bot/internal/worker_pool"
+	workerPool "ticker-pulse-bot/internal/worker_pool"
 )
 
 type Bot struct {
 	tgBot      *telegramBot.TelegramBot
-	workerPool *workerpool.WorkerPool
+	workerPool *workerPool.WorkerPool
 }
 
 func NewBot(maxWorkers int) (*Bot, error) {
@@ -18,7 +18,7 @@ func NewBot(maxWorkers int) (*Bot, error) {
 		return nil, err
 	}
 
-	wp := workerpool.New(maxWorkers)
+	wp := workerPool.NewWorkerPool(maxWorkers)
 
 	return &Bot{
 		tgBot:      tgBot,
@@ -26,25 +26,46 @@ func NewBot(maxWorkers int) (*Bot, error) {
 	}, nil
 }
 
-// Start запускает WorkerPool
+// Запуск вместе с WorkerPool
 func (b *Bot) Start() {
 	b.workerPool.Start()
+
+	b.SendMessageAsync("Привет 🌍 Я тут, чтобы держать руку на пульсе, если что - дам знать. 🚀")
+	b.CreateKeyboardAsync()
+	b.ListenKeyboardEventsAsync()
+
 	log.Println("[TICKER-PULSE-BOT]: Бот запущен")
 }
 
-// Stop останавливает WorkerPool
+// Остановка WorkerPool
 func (b *Bot) Stop() {
 	b.workerPool.Stop()
 	log.Println("[TICKER-PULSE-BOT]: Бот остановлен")
 }
 
-// SendAsyncMessage отправляет сообщение асинхронно через WorkerPool
-func (b *Bot) SendAsyncMessage(text string) {
+// Отправка сообщений асинхронно через WorkerPool
+func (b *Bot) SendMessageAsync(text string) {
 	b.workerPool.AddTask(func() {
 		if err := b.tgBot.SendMessage(text); err != nil {
 			log.Printf("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: %v", err)
 		} else {
 			log.Println("[TICKER-PULSE-BOT]: Сообщение успешно отправлено")
 		}
+	})
+}
+
+func (b *Bot) CreateKeyboardAsync() {
+	b.workerPool.AddTask(func() {
+		if err := b.tgBot.CreateKeyboard(); err != nil {
+			log.Printf("[TICKER-PULSE-BOT]: Ошибка в создании GUI: %v", err)
+		} else {
+			log.Println("[TICKER-PULSE-BOT]: GUI успешно создан")
+		}
+	})
+}
+
+func (b *Bot) ListenKeyboardEventsAsync() {
+	b.workerPool.AddTask(func() {
+		b.tgBot.ListenKeyboardEvents()
 	})
 }

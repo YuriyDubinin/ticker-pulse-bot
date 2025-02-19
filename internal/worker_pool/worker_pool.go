@@ -1,4 +1,4 @@
-package workerpool
+package worker_pool
 
 import (
 	"log"
@@ -11,7 +11,7 @@ type WorkerPool struct {
 	wg         sync.WaitGroup
 }
 
-func New(maxWorkers int) *WorkerPool {
+func NewWorkerPool(maxWorkers int) *WorkerPool {
 	return &WorkerPool{
 		tasksCh:    make(chan func(), 100),
 		maxWorkers: maxWorkers,
@@ -48,7 +48,7 @@ func (wp *WorkerPool) Stop() {
 	log.Println("[TICKER-PULSE_BOT]: Остановка WorkerPool...")
 
 	close(wp.tasksCh) // Закрытие канала задачь, чтобы воркеры завершили обработку
-	wp.wg.Wait()      // Ожидание завершения всех воркеров
+	// wp.wg.Wait()      // Ожидание завершения всех воркеров
 
 	log.Println("[TICKER-PULSE_BOT]: WorkerPool остановлен")
 }

@@ -23,15 +23,12 @@ func main() {
 		log.Fatal("[TICKER-PULSE-BOT]: MAX_WORKERS должно быть числом")
 	}
 
-	b, err := bot.NewBot(maxWorkers)
+	tickerPulseBot, err := bot.NewBot(maxWorkers)
 	if err != nil {
 		log.Fatalf("[TICKER-PULSE-BOT]: Ошибка инициализации бота: %v", err)
 	}
 
-	b.Start()
-
-	// Отправка тестового сообщения асинхронно
-	b.SendAsyncMessage("[TICKER-PULSE-BOT]: TEST")
+	tickerPulseBot.Start()
 
 	// Ожидание SIGINT/SIGTERM для корректного завершения
 	sigChan := make(chan os.Signal, 1)
@@ -39,5 +36,5 @@ func main() {
 	<-sigChan
 
 	log.Println("[TICKER-PULSE-BOT]: Завершение работы...")
-	b.Stop()
+	tickerPulseBot.Stop()
 }
