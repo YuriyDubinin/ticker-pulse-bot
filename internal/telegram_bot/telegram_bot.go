@@ -63,7 +63,7 @@ func (tb *TelegramBot) CreateKeyboard() error {
 	return err
 }
 
-func (tb *TelegramBot) ListenKeyboardEvents() {
+func (tb *TelegramBot) ListenKeyboardEvents(handlers map[string]func()) {
 	updates, err := tb.api.GetUpdatesChan(tgbotapi.NewUpdate(0))
 	if err != nil {
 		log.Fatal("[TICKER-PULSE-BOT]: Ошибка получения обновлений: ", err)
@@ -72,13 +72,10 @@ func (tb *TelegramBot) ListenKeyboardEvents() {
 	for update := range updates {
 		if update.CallbackQuery != nil {
 			callbackData := update.CallbackQuery.Data
-			switch callbackData {
-			case "CURRENT_QUOTES_RATE":
-				err := tb.SendMessage("🔄 Запрашиваем актуальные котировки...")
-				if err != nil {
-					log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
-				}
-				log.Println("CURRENT_QUOTES_RATE")
+			if handler, exists := handlers[callbackData]; exists {
+				handler()
+			} else {
+				log.Println("[TICKER-PULSE-BOT]: Неизвестная команда: ", callbackData)
 			}
 		}
 	}
