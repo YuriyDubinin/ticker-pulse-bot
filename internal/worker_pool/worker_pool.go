@@ -45,7 +45,7 @@ func (wp *WorkerPool) AddTask(task func()) {
 }
 
 func (wp *WorkerPool) Stop() {
-	log.Println("[TICKER-PULSE_BOT]: Остановка WorkerPool...")
+	log.Println("[TICKER-PULSE_BOT]: Остановка WorkerPool..")
 
 	close(wp.tasksCh) // Закрытие канала задачь, чтобы воркеры завершили обработку
 	// wp.wg.Wait()      // Ожидание завершения всех воркеров

@@ -35,6 +35,6 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("[TICKER-PULSE-BOT]: Завершение работы...")
+	log.Println("[TICKER-PULSE-BOT]: Завершение работы..")
 	tickerPulseBot.Stop()
 }

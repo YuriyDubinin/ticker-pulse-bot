@@ -18,8 +18,8 @@ func NewCryptoFetcher() *CryptoFetcher {
 	}
 }
 
-func (cf *CryptoFetcher) FetchCoingeckoQuotesRate(cryptoID string, currency string) (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/simple/price?ids=%s&vs_currencies=%s", cf.baseURL, cryptoID, currency)
+func (cf *CryptoFetcher) FetchCoingeckoQuotesRate(quoteID string, currency string) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/simple/price?ids=%s&vs_currencies=%s", cf.baseURL, quoteID, currency)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("[TICKER-PULSE-BOT]: [CRYPTO-FETCHER]: Ошибка запроса к Coingecko: %v", err)
@@ -48,8 +48,8 @@ func (cf *CryptoFetcher) FetchCoingeckoQuotesRate(cryptoID string, currency stri
 	return result, nil
 }
 
-func (cf *CryptoFetcher) FetchCoingeckoHistoricalData(cryptoID string, period int) (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/coins/%s/market_chart?vs_currency=usd&days=%d&interval=daily", cf.baseURL, cryptoID, period)
+func (cf *CryptoFetcher) FetchCoingeckoHistoricalData(quoteID string, period int) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/coins/%s/market_chart?vs_currency=usd&days=%d&interval=daily", cf.baseURL, quoteID, period)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("[TICKER-PULSE-BOT]: [CRYPTO-FETCHER]: Ошибка запроса к Coingecko: %v", err)

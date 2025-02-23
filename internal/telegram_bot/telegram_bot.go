@@ -1,8 +1,11 @@
 package telegram_bot
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"sort"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	godotenv "github.com/joho/godotenv"
@@ -43,6 +46,32 @@ func (tb *TelegramBot) SendMessage(text string) error {
 	msg := tgbotapi.NewMessageToChannel(tb.chatID, text)
 	_, err := tb.api.Send(msg)
 	return err
+}
+
+func (tb *TelegramBot) ConvertQuotesRateToMsg(data map[string]interface{}) string {
+	var (
+		result strings.Builder
+		keys   = make([]string, 0, len(data))
+		prices = make(map[string]float64, len(data))
+	)
+
+	// Преобразование данных и сбор ключей
+	for key, value := range data {
+		if innerMap, ok := value.(map[string]interface{}); ok {
+			if price, ok := innerMap["usd"].(float64); ok {
+				keys = append(keys, key)
+				prices[key] = price
+			}
+		}
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		result.WriteString(fmt.Sprintf("%-20s %15.2f  $\n", key, prices[key]))
+	}
+
+	return result.String()
 }
 
 // GUI

@@ -1,29 +1,20 @@
 package bot
 
 import (
+	"fmt"
 	"log"
-	"math/rand"
 	cryptoFetcher "ticker-pulse-bot/internal/crypto_fetcher"
 	dataFormatter "ticker-pulse-bot/internal/pkg/data_formatter"
-	telegramMsgFmt "ticker-pulse-bot/internal/pkg/telegram_message_formatter"
+	quotes "ticker-pulse-bot/internal/pkg/quotes"
 	telegramBot "ticker-pulse-bot/internal/telegram_bot"
 	workerPool "ticker-pulse-bot/internal/worker_pool"
 	"time"
 )
 
-type QuoteInfo struct {
-	CryptoID  string
-	Ticker    string
-	Label     string
-	MinPrice  float64
-	MaxPrice  float64
-	UpdatedAt time.Time
-}
-
 type Bot struct {
 	tgBot      *telegramBot.TelegramBot
 	workerPool *workerPool.WorkerPool
-	quotes     *[]QuoteInfo
+	quotes     []quotes.QuoteInfo // временное решение до подьъема базы
 }
 
 func NewBot(maxWorkers int) (*Bot, error) {
@@ -38,13 +29,15 @@ func NewBot(maxWorkers int) (*Bot, error) {
 	return &Bot{
 		tgBot:      tgBot,
 		workerPool: wp,
+		quotes:     quotes.Quotes,
 	}, nil
 }
 
 // Запуск вместе с WorkerPool
+// todo: на следующей итерации обеспечить гибкость currency
 func (b *Bot) Start() {
+	log.Println("[TICKER-PULSE-BOT]: Бот запущен")
 	b.workerPool.Start()
-
 	b.SendMessageAsync("Привет 🌍 Я тут, чтобы держать руку на пульсе, если что - дам знать. 🚀")
 	b.CreateKeyboardAsync()
 	b.ListenKeyboardEventsAsync(map[string]func(){
@@ -53,12 +46,17 @@ func (b *Bot) Start() {
 			if err != nil {
 				log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
 			}
-			b.ReportCurrentQuotesRateAsync("bitcoin,ethereum,tether,binancecoin,usd-coin,ripple,cardano,dogecoin,solana,the-open-network")
+
+			quotesString, err := dataFormatter.FormatQuotesToString()
+			if err != nil {
+				log.Println("[TICKER-PULSE-BOT]: Ошибка форматирования котировок ", err)
+			}
+
+			b.ReportCurrentQuotesRateAsync(quotesString)
 		},
 	})
 	b.CalculateQuotesInfo()
-
-	log.Println("[TICKER-PULSE-BOT]: Бот запущен")
+	b.CheckQuoteLimitsByInterval(3600)
 }
 
 // Остановка WorkerPool
@@ -94,43 +92,29 @@ func (b *Bot) ListenKeyboardEventsAsync(handlers map[string]func()) {
 	})
 }
 
-// Report current quotes rate to chat
-func (b *Bot) ReportCurrentQuotesRateAsync(cryptoID string) {
+func (b *Bot) ReportCurrentQuotesRateAsync(quoteID string) {
 	b.workerPool.AddTask(func() {
 		cf := cryptoFetcher.NewCryptoFetcher()
-		data, err := cf.FetchCoingeckoQuotesRate(cryptoID, "usd")
+		data, err := cf.FetchCoingeckoQuotesRate(quoteID, "usd")
 		if err != nil {
-			log.Printf("[TICKER-PULSE-BOT]: Ошибка получения данных криптовалюты: %v", err)
+			log.Printf("[TICKER-PULSE-BOT]: Ошибка получения данных котировки: %v", err)
 			return
 		}
-		b.tgBot.SendMessage(telegramMsgFmt.ConvertCryptoDataToString(data))
+		b.tgBot.SendMessage(b.tgBot.ConvertQuotesRateToMsg(data))
 	})
 }
 
 func (b *Bot) CalculateQuotesInfo() {
-	quotes := []QuoteInfo{
-		{CryptoID: "bitcoin", Ticker: "BTC", Label: "Bitcoin"},
-		{CryptoID: "ethereum", Ticker: "ETH", Label: "Ethereum"},
-		{CryptoID: "tether", Ticker: "USDT", Label: "Tether"},
-		{CryptoID: "binancecoin", Ticker: "BNB", Label: "Binance Coin"},
-		{CryptoID: "usd-coin", Ticker: "USDC", Label: "USD Coin"},
-		{CryptoID: "ripple", Ticker: "XRP", Label: "Ripple"},
-		{CryptoID: "cardano", Ticker: "ADA", Label: "Cardano"},
-		{CryptoID: "dogecoin", Ticker: "DOGE", Label: "Dogecoin"},
-		{CryptoID: "solana", Ticker: "SOL", Label: "Solana"},
-		{CryptoID: "the-open-network", Ticker: "TON", Label: "The Open Network"},
-	}
-
-	rand.Seed(time.Now().UnixNano()) // Инициализируем seed для случайных чисел
-
 	b.workerPool.AddTask(func() {
-		var updatedQuotes []QuoteInfo
+		cf := cryptoFetcher.NewCryptoFetcher()
+		var updatedQuotes []quotes.QuoteInfo
 
-		for _, quote := range quotes {
-			cf := cryptoFetcher.NewCryptoFetcher()
-			historicalData, err := cf.FetchCoingeckoHistoricalData(quote.CryptoID, 14)
+		for _, quote := range b.quotes {
+			time.Sleep(time.Duration(15) * time.Second)
+
+			historicalData, err := cf.FetchCoingeckoHistoricalData(quote.QuoteID, 14)
 			if err != nil {
-				log.Printf("[TICKER-PULSE-BOT]:  %v", err)
+				log.Printf("[TICKER-PULSE-BOT]: Ошибка получения исторических данных: %v", err)
 				return
 			}
 
@@ -146,11 +130,64 @@ func (b *Bot) CalculateQuotesInfo() {
 			quote.UpdatedAt = time.Now()
 
 			updatedQuotes = append(updatedQuotes, quote)
-
-			time.Sleep(time.Duration(15) * time.Second)
 		}
 
-		b.quotes = &updatedQuotes
+		b.quotes = updatedQuotes
 		log.Println("[TICKER-PULSE-BOT]: Список котировок обновлен успешно")
 	})
+}
+
+func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
+	cf := cryptoFetcher.NewCryptoFetcher()
+
+	b.workerPool.AddTask(func() {
+		for {
+			quotesString, err := dataFormatter.FormatQuotesToString()
+			if err != nil {
+				log.Printf("[TICKER-PULSE-BOT]: Ошибка форматирования данных: %v", err)
+				return
+
+			}
+
+			quotesRate, err := cf.FetchCoingeckoQuotesRate(quotesString, "usd") // TODO: улучшить гибкость метода
+			if err != nil {
+				log.Printf("[TICKER-PULSE-BOT]: Ошибка получения данных криптовалюты: %v", err)
+				return
+			}
+
+			for _, quote := range b.quotes {
+				quoteRateMap, ok := quotesRate[quote.QuoteID].(map[string]interface{})
+				if !ok {
+					log.Printf("[TICKER-PULSE-BOT]: Неверный тип для QuoteID %s\n", quote.QuoteID)
+				}
+
+				quoteUsdPrice, exists := quoteRateMap["usd"].(float64)
+				if exists {
+					log.Printf("%v: %v, min: %v, max: %v\n", quote.Label, quoteUsdPrice, quote.MinPrice, quote.MaxPrice)
+
+					if quote.MinPrice != 0 && quoteUsdPrice < quote.MinPrice {
+						msg := fmt.Sprintf("⬇️ %+v %+v, Спустился ниже недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
+						err := b.tgBot.SendMessage(msg)
+						if err != nil {
+							log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
+						}
+					}
+
+					if quote.MinPrice != 0 && quoteUsdPrice > quote.MaxPrice {
+						msg := fmt.Sprintf("⬆️ %+v %+v, Поднялся выше недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
+						err := b.tgBot.SendMessage(msg)
+						if err != nil {
+							log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
+						}
+					}
+
+				} else {
+					log.Printf("[TICKER-PULSE-BOT]: Нет USD значения для %s\n", quote.QuoteID)
+				}
+			}
+
+			time.Sleep(time.Duration(interval) * time.Second)
+		}
+	})
+
 }
