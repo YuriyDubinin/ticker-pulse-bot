@@ -1,0 +1,41 @@
+# Бинарные файлы Go
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+
+# Каталоги сборки и временные файлы
+bin/
+vendor/
+
+# Файлы IDE и редакторов
+.idea/
+.vscode/
+*.iml
+
+# Кеш и конфигурации редакторов
+*.swp
+*.swo
+
+# Кеш сборки Go
+*.test
+*.prof
+*.cover
+*.o
+*.a
+
+# Docker и CI/CD
+.env
+.env.local
+.envrc
+docker-compose.override.yml
+
+# MacOS и система
+.DS_Store
+Thumbs.db
+
+# Air (hot reload)
+.air.toml
+tmp/

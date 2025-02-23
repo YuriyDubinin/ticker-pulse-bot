@@ -149,7 +149,7 @@ func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
 
 			}
 
-			quotesRate, err := cf.FetchCoingeckoQuotesRate(quotesString, "usd") // TODO: улучшить гибкость метода
+			quotesRate, err := cf.FetchCoingeckoQuotesRate(quotesString, "usd") // todo: улучшить гибкость метода
 			if err != nil {
 				log.Printf("[TICKER-PULSE-BOT]: Ошибка получения данных криптовалюты: %v", err)
 				return

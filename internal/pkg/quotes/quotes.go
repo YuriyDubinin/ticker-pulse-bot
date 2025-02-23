@@ -22,5 +22,5 @@ var Quotes = []QuoteInfo{
 	{QuoteID: "cardano", Ticker: "ADA", Label: "Cardano"},
 	{QuoteID: "dogecoin", Ticker: "DOGE", Label: "Dogecoin"},
 	{QuoteID: "solana", Ticker: "SOL", Label: "Solana"},
-	{QuoteID: "the-open-network", Ticker: "TON", Label: "The Open Network"},
+	{QuoteID: "the-open-network", Ticker: "TON", Label: "Toncoin"},
 }

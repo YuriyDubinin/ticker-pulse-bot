@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strings"
+
+	quotes "ticker-pulse-bot/internal/pkg/quotes"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	godotenv "github.com/joho/godotenv"
@@ -49,26 +50,20 @@ func (tb *TelegramBot) SendMessage(text string) error {
 }
 
 func (tb *TelegramBot) ConvertQuotesRateToMsg(data map[string]interface{}) string {
-	var (
-		result strings.Builder
-		keys   = make([]string, 0, len(data))
-		prices = make(map[string]float64, len(data))
-	)
+	var result strings.Builder
 
-	// Преобразование данных и сбор ключей
-	for key, value := range data {
-		if innerMap, ok := value.(map[string]interface{}); ok {
-			if price, ok := innerMap["usd"].(float64); ok {
-				keys = append(keys, key)
-				prices[key] = price
-			}
+	for _, quote := range quotes.Quotes {
+		quoteRateMap, ok := data[quote.QuoteID].(map[string]interface{})
+		if !ok {
+			log.Printf("[TICKER-PULSE-BOT]: [ConvertQuotesRateToMsg]: Неверный тип для QuoteID %s\n", quote.QuoteID)
 		}
-	}
 
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		result.WriteString(fmt.Sprintf("%-20s %15.2f  $\n", key, prices[key]))
+		quoteUsdPrice, exists := quoteRateMap["usd"].(float64)
+		if exists {
+			result.WriteString(fmt.Sprintf("%-15s %-5s %15.2f $\n", quote.Label, quote.Ticker, quoteUsdPrice))
+		} else {
+			log.Printf("[TICKER-PULSE-BOT]: [ConvertQuotesRateToMsg]: Нет USD значения для %s\n", quote.QuoteID)
+		}
 	}
 
 	return result.String()
