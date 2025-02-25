@@ -1,4 +1,8 @@
-FROM golang:1.23 AS builder
+# arm64
+# FROM golang:1.23 AS builder 
+
+# amd64
+FROM --platform=linux/amd64 golang:1.23 AS builder
 
 WORKDIR /app
 
@@ -11,7 +15,11 @@ COPY . .
 # Сбор бинарника для Linux amd64
 RUN GOARCH=amd64 GOOS=linux go build -o /bin/ticker_pulse_bot ./cmd/main.go
 
-FROM alpine:latest
+# arm64
+# FROM alpine:latest
+
+# amd64
+FROM --platform=linux/amd64 alpine:latest
 
 RUN apk --no-cache add ca-certificates libc6-compat
 
