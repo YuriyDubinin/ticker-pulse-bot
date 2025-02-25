@@ -12,9 +12,14 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
+	envPath := os.Getenv("ENV_FILE")
+	if envPath == "" {
+		envPath = ".env" // значение по умолчанию
+	}
+
+	err := godotenv.Load(envPath)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("[TICKER-PULSE-BOT]: Ошибка загрузки .env")
 	}
 
 	// Загрузка количества воркеров из .env

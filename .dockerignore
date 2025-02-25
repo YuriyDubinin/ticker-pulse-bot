@@ -27,9 +27,6 @@ vendor/
 *.a
 
 # Docker и CI/CD
-.env
-.env.local
-.envrc
 docker-compose.override.yml
 
 # MacOS и система

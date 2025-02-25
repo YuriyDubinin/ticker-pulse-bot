@@ -18,7 +18,12 @@ type TelegramBot struct {
 }
 
 func NewTelegramBot() (*TelegramBot, error) {
-	err := godotenv.Load()
+	envPath := os.Getenv("ENV_FILE")
+	if envPath == "" {
+		envPath = ".env" // значение по умолчанию
+	}
+
+	err := godotenv.Load(envPath)
 	if err != nil {
 		log.Fatal("[TICKER-PULSE-BOT]: Ошибка загрузки .env")
 	}
