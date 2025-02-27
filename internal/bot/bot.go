@@ -38,25 +38,26 @@ func NewBot(maxWorkers int) (*Bot, error) {
 func (b *Bot) Start() {
 	log.Println("[TICKER-PULSE-BOT]: Бот запущен")
 	b.workerPool.Start()
-	b.SendMessageAsync("Привет 🌍 Я тут, чтобы держать руку на пульсе, если что - дам знать. 🚀")
-	b.CreateKeyboardAsync()
-	b.ListenKeyboardEventsAsync(map[string]func(){
-		"CURRENT_QUOTES_RATE": func() {
-			err := b.tgBot.SendMessage("🔄 Запрашиваем актуальные котировки..")
-			if err != nil {
-				log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
-			}
+	b.tgBot.SendMessageToChannel("Привет 🌍 Я тут, чтобы держать руку на пульсе, если что - дам знать 🚀")
+	// b.CreateKeyboardAsync()
+	// b.ListenKeyboardEventsAsync(map[string]func(){
+	// 	"CURRENT_QUOTES_RATE": func() {
+	// 		err := b.tgBot.SendMessageToChannel("🔄 Запрашиваем актуальные котировки..")
+	// 		if err != nil {
+	// 			log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
+	// 		}
 
-			quotesString, err := dataFormatter.FormatQuotesToString()
-			if err != nil {
-				log.Println("[TICKER-PULSE-BOT]: Ошибка форматирования котировок ", err)
-			}
+	// 		quotesString, err := dataFormatter.FormatQuotesToString()
+	// 		if err != nil {
+	// 			log.Println("[TICKER-PULSE-BOT]: Ошибка форматирования котировок ", err)
+	// 		}
 
-			b.ReportCurrentQuotesRateAsync(quotesString)
-		},
-	})
+	// 		b.ReportCurrentQuotesRateAsync(quotesString)
+	// 	},
+	// })
 	b.CalculateQuotesInfo()
 	b.CheckQuoteLimitsByInterval(3600)
+	b.ReportCurrentQuotesEveryHour()
 }
 
 // Остановка WorkerPool
@@ -68,7 +69,7 @@ func (b *Bot) Stop() {
 // Отправка сообщений асинхронно через WorkerPool
 func (b *Bot) SendMessageAsync(text string) {
 	b.workerPool.AddTask(func() {
-		if err := b.tgBot.SendMessage(text); err != nil {
+		if err := b.tgBot.SendMessageToChannel(text); err != nil {
 			log.Printf("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: %v", err)
 		} else {
 			log.Println("[TICKER-PULSE-BOT]: Сообщение успешно отправлено")
@@ -100,7 +101,7 @@ func (b *Bot) ReportCurrentQuotesRateAsync(quoteID string) {
 			log.Printf("[TICKER-PULSE-BOT]: Ошибка получения данных котировки: %v", err)
 			return
 		}
-		b.tgBot.SendMessage(b.tgBot.ConvertQuotesRateToMsg(data))
+		b.tgBot.SendMessageToChannel(b.tgBot.ConvertQuotesRateToMsg(data))
 	})
 }
 
@@ -166,16 +167,16 @@ func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
 					log.Printf("%v: %v, min: %v, max: %v\n", quote.Label, quoteUsdPrice, quote.MinPrice, quote.MaxPrice)
 
 					if quote.MinPrice != 0 && quoteUsdPrice < quote.MinPrice {
-						msg := fmt.Sprintf("⬇️ %+v %+v, Спустился ниже недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
-						err := b.tgBot.SendMessage(msg)
+						msg := fmt.Sprintf("⬇️ %+v %+v, спустился ниже недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
+						err := b.tgBot.SendMessageToChannel(msg)
 						if err != nil {
 							log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
 						}
 					}
 
 					if quote.MinPrice != 0 && quoteUsdPrice > quote.MaxPrice {
-						msg := fmt.Sprintf("⬆️ %+v %+v, Поднялся выше недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
-						err := b.tgBot.SendMessage(msg)
+						msg := fmt.Sprintf("⬆️ %+v %+v, поднялся выше недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
+						err := b.tgBot.SendMessageToChannel(msg)
 						if err != nil {
 							log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
 						}
@@ -190,4 +191,24 @@ func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
 		}
 	})
 
+}
+
+func (b *Bot) ReportCurrentQuotesEveryHour() {
+	b.workerPool.AddTask(func() {
+		for {
+			now := time.Now()
+			next := now.Truncate(time.Hour).Add(time.Hour)
+			waitTime := time.Until(next)
+
+			time.Sleep(waitTime)
+
+			quotesString, err := dataFormatter.FormatQuotesToString()
+			if err != nil {
+				log.Println("[TICKER-PULSE-BOT]: Ошибка форматирования котировок ", err)
+			}
+
+			b.tgBot.SendMessageToChannel("📊 Актуальный курс топовых криптовалют:")
+			b.ReportCurrentQuotesRateAsync(quotesString)
+		}
+	})
 }

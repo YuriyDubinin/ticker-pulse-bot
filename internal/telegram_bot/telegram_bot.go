@@ -48,7 +48,7 @@ func NewTelegramBot() (*TelegramBot, error) {
 	}, nil
 }
 
-func (tb *TelegramBot) SendMessage(text string) error {
+func (tb *TelegramBot) SendMessageToChannel(text string) error {
 	msg := tgbotapi.NewMessageToChannel(tb.chatID, text)
 	_, err := tb.api.Send(msg)
 	return err
