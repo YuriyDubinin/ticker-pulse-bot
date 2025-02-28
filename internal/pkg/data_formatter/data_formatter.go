@@ -15,7 +15,7 @@ type HistoricalQuoteMinMaxData struct {
 
 // Специально сделан для обработки данных полученных с помощью CalculateQuoteLimitValues,
 // поиск мин/макс показателя для тикера из предоставленных исторических данных
-func CalculateHistoricalMinMax(data map[string]interface{}, field string) (HistoricalQuoteMinMaxData, error) {
+func CalculateHistoricalMinMax(data map[string]any, field string) (HistoricalQuoteMinMaxData, error) {
 	var result HistoricalQuoteMinMaxData
 	result.MinPrice = math.MaxFloat64
 	result.MaxPrice = -math.MaxFloat64
@@ -25,13 +25,13 @@ func CalculateHistoricalMinMax(data map[string]interface{}, field string) (Histo
 		return result, fmt.Errorf("[CalculateHistoricalMinMax]: field '%s' not found in data", field)
 	}
 
-	entriesSlice, ok := entries.([]interface{})
+	entriesSlice, ok := entries.([]any)
 	if !ok {
 		return result, errors.New("[CalculateHistoricalMinMax]: invalid data format: expected slice of arrays")
 	}
 
 	for _, entry := range entriesSlice {
-		entryArr, ok := entry.([]interface{})
+		entryArr, ok := entry.([]any)
 		if !ok || len(entryArr) != 2 {
 			return result, errors.New("[CalculateHistoricalMinMax]: invalid data format: expected array of [timestamp, value]")
 		}

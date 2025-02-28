@@ -23,7 +23,7 @@ func (wp *WorkerPool) Start() {
 		wp.wg.Add(1)
 		go wp.worker(i)
 	}
-	log.Printf("[TICKER-PULSE_BOT]: Запущено %d воркеров\n", wp.maxWorkers)
+	log.Printf("[TICKER-PULSE-BOT]: Запущено %d воркеров\n", wp.maxWorkers)
 }
 
 func (wp *WorkerPool) worker(id int) {
@@ -33,22 +33,22 @@ func (wp *WorkerPool) worker(id int) {
 		task()
 	}
 
-	log.Printf("[TICKER-PULSE_BOT]: Воркер %d завершает работу: все задачи выполнены\n", id)
+	log.Printf("[TICKER-PULSE-BOT]: Воркер %d завершает работу: все задачи выполнены\n", id)
 }
 
 func (wp *WorkerPool) AddTask(task func()) {
 	select {
 	case wp.tasksCh <- task:
 	default:
-		log.Println("[TICKER-PULSE_BOT]: Очередь задач переполнена, задача отклонена")
+		log.Println("[TICKER-PULSE-BOT]: Очередь задач переполнена, задача отклонена")
 	}
 }
 
 func (wp *WorkerPool) Stop() {
-	log.Println("[TICKER-PULSE_BOT]: Остановка WorkerPool..")
+	log.Println("[TICKER-PULSE-BOT]: Остановка WorkerPool..")
 
 	close(wp.tasksCh) // Закрытие канала задачь, чтобы воркеры завершили обработку
 	// wp.wg.Wait()      // Ожидание завершения всех воркеров
 
-	log.Println("[TICKER-PULSE_BOT]: WorkerPool остановлен")
+	log.Println("[TICKER-PULSE-BOT]: WorkerPool остановлен")
 }

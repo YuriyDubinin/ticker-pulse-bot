@@ -54,11 +54,11 @@ func (tb *TelegramBot) SendMessageToChannel(text string) error {
 	return err
 }
 
-func (tb *TelegramBot) ConvertQuotesRateToMsg(data map[string]interface{}) string {
+func (tb *TelegramBot) ConvertQuotesRateToMsg(data map[string]any) string {
 	var result strings.Builder
 
 	for _, quote := range quotes.Quotes {
-		quoteRateMap, ok := data[quote.QuoteID].(map[string]interface{})
+		quoteRateMap, ok := data[quote.QuoteID].(map[string]any)
 		if !ok {
 			log.Printf("[TICKER-PULSE-BOT]: [ConvertQuotesRateToMsg]: Неверный тип для QuoteID %s\n", quote.QuoteID)
 		}

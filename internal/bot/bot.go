@@ -157,7 +157,7 @@ func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
 			}
 
 			for _, quote := range b.quotes {
-				quoteRateMap, ok := quotesRate[quote.QuoteID].(map[string]interface{})
+				quoteRateMap, ok := quotesRate[quote.QuoteID].(map[string]any)
 				if !ok {
 					log.Printf("[TICKER-PULSE-BOT]: Неверный тип для QuoteID %s\n", quote.QuoteID)
 				}
@@ -167,7 +167,7 @@ func (b *Bot) CheckQuoteLimitsByInterval(interval int) {
 					log.Printf("%v: %v, min: %v, max: %v\n", quote.Label, quoteUsdPrice, quote.MinPrice, quote.MaxPrice)
 
 					if quote.MinPrice != 0 && quoteUsdPrice < quote.MinPrice {
-						msg := fmt.Sprintf("⬇️ %+v %+v, спустился ниже недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
+						msg := fmt.Sprintf("⬇️ %+v %+v, снизился ниже недельного значения: %.2f $", quote.Label, quote.Ticker, quoteUsdPrice)
 						err := b.tgBot.SendMessageToChannel(msg)
 						if err != nil {
 							log.Println("[TICKER-PULSE-BOT]: Ошибка отправки сообщения: ", err)
